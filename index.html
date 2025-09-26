@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Password & PIN Generator</title>
+  <style>
+    /* Base Styles */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 650px;
+      margin: 0 auto;
+      text-align: center;
+      background: #f0f4f1; /* soft outdoorsy greenish background */
+      color: #2e2e2e;
+    }
+
+    h1 {
+      margin-top: 40px;
+      color: #1b3a2f; /* deep forest green */
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      cursor: pointer;
+      background: #d4e4d1; /* light green */
+      border-right: 1px solid #b0c9a2;
+      transition: background 0.3s, color 0.3s;
+      font-weight: 600;
+    }
+    .tab:last-child { border-right: none; }
+    .tab.active {
+      background: #6b8e23; /* olive green */
+      color: #fff;
+    }
+
+    /* Box containers */
+    .box {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      margin-bottom: 25px;
+    }
+
+    .display {
+      background: #e5efe5; /* soft green highlight */
+      padding: 14px;
+      margin: 18px 0;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: monospace;
+      font-size: 15px;
+    }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: #6b8e23; /* green slider */
+    }
+
+    input[type=number] {
+      width: 60px;
+      padding: 5px;
+      margin-left: 10px;
+      border-radius: 6px;
+      border: 1px solid #a5bfa0;
+      text-align: center;
+    }
+
+    input[type=checkbox], input[type=radio] {
+      accent-color: #6b8e23;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #6b8e23;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #4e6f16;
+    }
+
+    /* Strength meter */
+    .strength {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 15px;
+    }
+    .weak { color: #d9534f; }    /* reddish */
+    .medium { color: #f0ad4e; }  /* orange/golden */
+    .strong { color: #5cb85c; }  /* green */
+
+    .hidden { display: none; }
+
+    /* Footer */
+    footer {
+      margin: 40px 0;
+      color: #6b6b6b;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Password & PIN Generator</h1>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-password" onclick="switchTab('password')">Password Generator</div>
+    <div class="tab" id="tab-pin" onclick="switchTab('pin')">PIN Generator</div>
+  </div>
+
+  <!-- Password Generator -->
+  <div class="box" id="password-box">
+    <div class="display">
+      <span id="password">Your password will appear here</span>
+      <button onclick="copyText('password')">Copy</button>
+    </div>
+
+    <div>
+      <label>
+        Length: 
+        <input type="number" id="lengthNumber" min="4" max="64" value="12">
+      </label>
+      <input type="range" id="lengthSlider" min="4" max="64" value="12">
+    </div>
+
+    <div class="options">
+      <label><input type="checkbox" id="lower" checked> Lowercase</label>
+      <label><input type="checkbox" id="upper" checked> Uppercase</label>
+      <label><input type="checkbox" id="numbers" checked> Numbers</label>
+      <label><input type="checkbox" id="symbols" checked> Symbols</label>
+    </div>
+
+    <button onclick="generatePassword()">Generate Password</button>
+    <div id="strengthText" class="strength"></div>
+  </div>
+
+  <!-- PIN Generator -->
+  <div class="box hidden" id="pin-box">
+    <div class="display">
+      <span id="pin">Your PIN will appear here</span>
+      <button onclick="copyText('pin')">Copy</button>
+    </div>
+
+    <div>
+      <label>
+        PIN Length: 
+        <input type="number" id="pinLength" min="4" max="12" value="4">
+      </label>
+    </div>
+
+    <div class="options">
+      <label><input type="radio" name="pinType" value="digits" checked> Digits Only</label>
+      <label><input type="radio" name="pinType" value="alphanumeric"> Digits + Letters</label>
+      <label><input type="radio" name="pinType" value="all"> Digits + Letters + Symbols</label>
+    </div>
+
+    <button onclick="generatePin()">Generate PIN</button>
+  </div>
+
+  <footer>
+    Kae Davis | 2025
+  </footer>
+
+  <script>
+    const lengthSlider = document.getElementById("lengthSlider");
+    const lengthNumber = document.getElementById("lengthNumber");
+    const strengthText = document.getElementById("strengthText");
+
+    lengthSlider.addEventListener("input", e => { lengthNumber.value = e.target.value; });
+    lengthNumber.addEventListener("input", e => {
+      let val = Math.max(4, Math.min(64, e.target.value));
+      lengthSlider.value = val;
+      lengthNumber.value = val;
+    });
+
+    function generatePassword() {
+      const length = Number(lengthNumber.value);
+      const useLower = document.getElementById("lower").checked;
+      const useUpper = document.getElementById("upper").checked;
+      const useNumbers = document.getElementById("numbers").checked;
+      const useSymbols = document.getElementById("symbols").checked;
+
+      let chars = "";
+      if(useLower) chars += "abcdefghijklmnopqrstuvwxyz";
+      if(useUpper) chars += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      if(useNumbers) chars += "0123456789";
+      if(useSymbols) chars += "!@#$%^&*()-_=+[]{}|;:,.<>?/";
+
+      if(!chars){
+        document.getElementById("password").textContent = "⚠️ Select at least one option";
+        strengthText.textContent = "";
+        return;
+      }
+
+      let pwd = "";
+      for(let i=0;i<length;i++){
+        pwd += chars.charAt(Math.floor(Math.random()*chars.length));
+      }
+
+      document.getElementById("password").textContent = pwd;
+      evaluateStrength(pwd, {useLower, useUpper, useNumbers, useSymbols});
+    }
+
+    function generatePin() {
+      const length = Number(document.getElementById("pinLength").value);
+      const pinType = document.querySelector("input[name='pinType']:checked").value;
+
+      let chars = "";
+      if(pinType === "digits") chars = "0123456789";
+      else if(pinType === "alphanumeric") chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      else chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-_=+[]{}|;:,.<>?/";
+
+      let pin = "";
+      for(let i=0;i<length;i++){
+        pin += chars.charAt(Math.floor(Math.random()*chars.length));
+      }
+      document.getElementById("pin").textContent = pin;
+    }
+
+    function copyText(id) {
+      const text = document.getElementById(id).textContent;
+      if(text && !text.includes("⚠️") && !text.includes("Your")){
+        navigator.clipboard.writeText(text);
+        alert("Copied: " + text);
+      }
+    }
+
+    function evaluateStrength(password, options){
+      let score = 0;
+      if(password.length >=8) score++;
+      if(password.length >=12) score++;
+      if(password.length >=16) score++;
+      let variety = Object.values(options).filter(Boolean).length;
+      score += variety - 1;
+
+      if(score <= 2){ strengthText.textContent="Strength: Weak"; strengthText.className="strength weak"; }
+      else if(score <= 4){ strengthText.textContent="Strength: Medium"; strengthText.className="strength medium"; }
+      else{ strengthText.textContent="Strength: Strong"; strengthText.className="strength strong"; }
+    }
+
+    function switchTab(type){
+      const passwordBox = document.getElementById("password-box");
+      const pinBox = document.getElementById("pin-box");
+      const tabPassword = document.getElementById("tab-password");
+      const tabPin = document.getElementById("tab-pin");
+
+      if(type==="password"){
+        passwordBox.classList.remove("hidden");
+        pinBox.classList.add("hidden");
+        tabPassword.classList.add("active");
+        tabPin.classList.remove("active");
+      } else {
+        passwordBox.classList.add("hidden");
+        pinBox.classList.remove("hidden");
+        tabPassword.classList.remove("active");
+        tabPin.classList.add("active");
+      }
+    }
+  </script>
+</body>
+</html>
